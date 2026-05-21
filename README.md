@@ -1,66 +1,83 @@
-# Reliable Question Answering with LLMs
+# Reliability-Oriented Question Answering with LLMs
 
 ## Overview
 
-This project investigates methods for improving the reliability, calibration, and trustworthiness of Large Language Model (LLM)-based Question Answering (QA) systems.
+This repository contains a progressive experimental study on reliability-aware question answering (QA) systems using Large Language Models (LLMs). The project investigates how retrieval grounding, uncertainty estimation, calibration analysis, selective prediction, and conformal prediction mechanisms may improve the robustness and trustworthiness of generative QA systems.
 
-The work focuses on reducing hallucinations and improving uncertainty estimation by integrating multiple reliability-oriented techniques, including:
+The framework integrates multiple reliability-oriented techniques, including:
 
-- Self-Consistency Decoding
-- Confidence-Based Abstention
-- Threshold Analysis
-- Calibration Evaluation
-- Expected Calibration Error (ECE)
-- Retrieval-Augmented Generation (RAG)
-- Semantic Retrieval using Sentence Embeddings
-- Conformal Prediction
+* Self-Consistency Sampling
+* Confidence-Based Abstention
+* Threshold-Based Selective Prediction
+* Calibration Analysis
+* Expected Calibration Error (ECE)
+* Retrieval-Augmented Generation (RAG)
+* Semantic Retrieval using Sentence Embeddings
+* Conformal Prediction
 
-The project combines experimental implementations, evaluation pipelines, and a research-oriented technical report developed progressively through multiple experimental phases.
-
----
-
-# Motivation
-
-Although modern LLMs demonstrate strong capabilities in natural language understanding and generation, they may still produce:
-
-- hallucinated answers,
-- incorrect outputs with high confidence,
-- unstable responses,
-- poorly calibrated confidence estimates.
-
-These limitations become critical in applications requiring reliability and trustworthy decision-making.
-
-This project explores practical and research-oriented approaches for improving QA reliability using uncertainty-aware methods and grounded generation.
+The repository combines experimental implementations, evaluation pipelines, Jupyter notebooks, and an evolving research-oriented technical report developed progressively through multiple experimental phases.
 
 ---
 
-# Implemented Methods
+## Motivation
 
-## 1. Self-Consistency Decoding
+Although modern Large Language Models demonstrate strong capabilities in natural language understanding and generation, they may still produce:
 
-Multiple stochastic generations are sampled for the same question.  
-The final answer is selected based on majority agreement among generated outputs.
+* hallucinated answers,
+* semantically inconsistent outputs,
+* unstable reasoning behavior,
+* overconfident incorrect predictions,
+* and poorly calibrated confidence estimates.
 
-Confidence is estimated using answer frequency:
+These limitations become particularly important in scientific, technical, educational, and safety-critical applications where trustworthy and uncertainty-aware predictions are essential.
 
-\[
-\text{Confidence} =
+This project explores practical and research-oriented approaches for improving QA reliability using grounded generation and uncertainty-aware mechanisms.
+
+---
+
+## Reliability Mechanisms Investigated
+
+### 1. Baseline Generative Question Answering
+
+The initial phase establishes a baseline generative QA pipeline using the FLAN-T5 transformer architecture.
+
+The baseline system performs autoregressive answer generation for input questions and serves as a reference point for subsequent reliability-oriented extensions.
+
+---
+
+### 2. Self-Consistency Sampling
+
+Multiple stochastic generations are sampled for the same input question using temperature-controlled decoding.
+
+The final answer is selected using majority aggregation among generated outputs.
+
+Confidence is estimated empirically using answer agreement frequency:
+
+$$
+\hat{p}(q)
+==========
+
 \frac{
-\text{Most Frequent Answer Count}
+\max_a \mathrm{count}(a)
 }{
-\text{Total Samples}
+K
 }
-\]
+$$
 
-This improves robustness and answer stability.
+where:
+
+* (K) is the number of stochastic samples,
+* and (\mathrm{count}(a)) denotes the frequency of answer (a).
+
+This mechanism improves robustness and provides a practical uncertainty signal.
 
 ---
 
-## 2. Confidence-Based Abstention
+### 3. Confidence-Based Abstention and Threshold Analysis
 
-A selective prediction mechanism is implemented.
+A selective prediction mechanism is introduced to avoid unreliable low-confidence predictions.
 
-If the confidence score is below a threshold:
+If the empirical confidence score falls below a prescribed threshold:
 
 ```text
 I don't know
@@ -68,195 +85,212 @@ I don't know
 
 is returned instead of forcing a potentially unreliable answer.
 
-This allows the system to trade coverage for reliability.
+The framework experimentally evaluates several confidence thresholds:
+
+* 0.2
+* 0.3
+* 0.4
+* 0.5
+* 0.6
+
+to analyze the tradeoff between:
+
+* prediction coverage,
+* abstention rate,
+* and empirical reliability.
 
 ---
 
-## 3. Threshold Analysis
+### 4. Calibration Analysis
 
-The QA system is evaluated under multiple confidence thresholds:
+The project evaluates the statistical quality of confidence estimates using calibration analysis and Expected Calibration Error (ECE).
 
-- 0.2
-- 0.3
-- 0.4
-- 0.5
-- 0.6
+Confidence scores are partitioned into calibration bins and compared with empirical correctness frequencies.
 
-The relationship between:
-- coverage,
-- abstention rate,
-- and accuracy
+ECE is computed as:
 
-is experimentally analyzed.
+$$
+\mathrm{ECE}
+============
 
----
-
-## 4. Calibration Analysis
-
-The project evaluates confidence calibration using:
-
-- calibration bins,
-- empirical accuracy,
-- Expected Calibration Error (ECE).
-
-ECE is computed using:
-
-\[
-\text{ECE} =
 \sum_{b=1}^{B}
-\frac{|B_b|}{n}
+\frac{
+|\mathcal{B}_b|
+}{n}
 \left|
-\text{acc}(B_b) -
-\text{conf}(B_b)
+\mathrm{Acc}(\mathcal{B}_b)
+---------------------------
+
+\mathrm{Conf}(\mathcal{B}_b)
 \right|
-\]
+$$
 
 where:
-- \(B\) is the number of confidence bins,
-- \(B_b\) is the set of samples inside bin \(b\),
-- \(\text{acc}(B_b)\) is empirical accuracy,
-- \(\text{conf}(B_b)\) is average confidence.
+
+* (B) is the number of calibration bins,
+* (\mathcal{B}_b) denotes calibration bin (b),
+* (\mathrm{Acc}(\mathcal{B}_b)) is empirical accuracy,
+* (\mathrm{Conf}(\mathcal{B}_b)) is average confidence,
+* and (n) is the number of evaluated predictions.
+
+Calibration analysis provides a quantitative framework for evaluating uncertainty quality in reliability-aware QA systems.
 
 ---
 
-## 5. Retrieval-Augmented Generation (RAG)
+### 5. Retrieval-Augmented Generation (RAG)
 
-The QA system is enhanced using external knowledge retrieval.
+The QA framework is enhanced using Retrieval-Augmented Generation (RAG).
 
-The pipeline includes:
-- document collection,
-- semantic embeddings,
-- similarity retrieval,
-- context-aware generation.
+The retrieval pipeline includes:
 
-Sentence-transformer embeddings are used for semantic search.
+* document collections,
+* semantic embeddings,
+* similarity-based retrieval,
+* and retrieval-grounded generation.
 
-This significantly improves technical-domain QA performance.
+Sentence-transformer embeddings are used for semantic search and contextual grounding.
 
----
-
-## 6. Conformal Prediction
-
-A conformal prediction layer is implemented to provide principled uncertainty control.
-
-Nonconformity scores are defined as:
-
-\[
-s(q) = 1 - \hat{p}(q)
-\]
-
-A conformal threshold is estimated from calibration data and used to decide whether generated answers should be accepted or rejected.
-
-This introduces finite-sample reliability guarantees into the QA pipeline.
+The experiments suggest that retrieval grounding substantially improves semantic consistency and factual reliability for technical-domain questions.
 
 ---
 
-# Experimental Pipeline
+### 6. Conformal Prediction
 
-The project was developed progressively through several experimental phases.
+A conformal prediction layer is integrated to provide statistically principled uncertainty-aware acceptance decisions.
 
-| Phase | Main Objective |
-|---|---|
-| Phase 1 | Baseline QA and self-consistency |
-| Phase 2 | Threshold analysis and selective prediction |
-| Phase 3 | Calibration evaluation and ECE |
-| Phase 4 | Retrieval-Augmented Generation (RAG) |
-| Phase 5 | Conformal prediction |
+Nonconformity scores are defined using empirical confidence:
 
-The implementation evolved incrementally while evaluating reliability improvements at each stage.
+$$
+s(q)
+====
+
+1-\hat{p}(q)
+$$
+
+Calibration scores are used to estimate a conformal acceptance threshold.
+
+Generated answers are either:
+
+* accepted,
+* or rejected under uncertainty.
+
+This introduces a reliability-oriented uncertainty control mechanism inspired by conformal prediction theory.
 
 ---
 
-# Example Experimental Results
+## Experimental Pipeline
 
-## Threshold Evaluation
+The project was developed progressively through five experimental phases.
+
+| Phase   | Main Objective                                          |
+| ------- | ------------------------------------------------------- |
+| Phase 1 | Baseline Generative QA                                  |
+| Phase 2 | Self-Consistency Sampling                               |
+| Phase 3 | Threshold Analysis and Selective Prediction             |
+| Phase 4 | Calibration Analysis and ECE                            |
+| Phase 5 | Retrieval-Augmented Generation and Conformal Prediction |
+
+The implementation evolved incrementally while evaluating reliability improvements at each stage of the framework.
+
+---
+
+## Example Experimental Results
+
+### Threshold Evaluation
 
 | Threshold | Coverage | Accuracy |
-|---|---|---|
-| 0.2 | 0.40 | 0.875 |
-| 0.3 | 0.40 | 1.00 |
-| 0.4 | 0.35 | 0.857 |
-| 0.5 | 0.40 | 0.875 |
-| 0.6 | 0.25 | 1.00 |
+| --------- | -------- | -------- |
+| 0.2       | 0.40     | 0.875    |
+| 0.3       | 0.40     | 1.00     |
+| 0.4       | 0.35     | 0.857    |
+| 0.5       | 0.40     | 0.875    |
+| 0.6       | 0.25     | 1.00     |
 
-These experiments demonstrate the tradeoff between:
-- answer coverage,
-- abstention,
-- and reliability.
+These experiments illustrate the tradeoff between:
+
+* answer coverage,
+* abstention behavior,
+* and prediction reliability.
 
 ---
 
-## Calibration Example
+### Calibration Example
 
 Example calibration statistics obtained experimentally:
 
 | Confidence | Accuracy | Count |
-|---|---|---|
-| 0.09 | 0.14 | 14 |
-| 0.22 | 0.33 | 3 |
-| 0.45 | 1.00 | 1 |
-| 0.75 | 0.50 | 2 |
+| ---------- | -------- | ----- |
+| 0.09       | 0.14     | 14    |
+| 0.22       | 0.33     | 3     |
+| 0.45       | 1.00     | 1     |
+| 0.75       | 0.50     | 2     |
 
 Observed Expected Calibration Error:
 
-```text
-ECE = 0.11
-```
+$$
+\mathrm{ECE}=0.11
+$$
 
 ---
 
-## Example RAG Improvement
+### Example Retrieval-Augmented Improvement
 
-### Before RAG
+#### Before Retrieval Grounding
 
-Question:
+**Question**
+
 ```text
 What is Numerical Linear Algebra?
 ```
 
-Generated answer:
+**Generated answer**
+
 ```text
 arithmetic
 ```
 
-Confidence:
+**Confidence**
+
 ```text
 0.1
 ```
 
 ---
 
-### After RAG
+#### After Retrieval Grounding
 
-Question:
+**Question**
+
 ```text
 What is Numerical Linear Algebra?
 ```
 
-Generated answer:
+**Generated answer**
+
 ```text
 studies algorithms for solving linear systems and matrix computations efficiently
 ```
 
-Confidence:
+**Confidence**
+
 ```text
 0.9
 ```
 
-This demonstrates the impact of retrieval grounding on technical-domain QA reliability.
+These experiments demonstrate the impact of retrieval grounding on semantic reliability and technical-domain QA performance.
 
 ---
 
-# Repository Structure
+## Repository Structure
 
 ```text
-qa_uncertainty_project/
+qa-reliability-llm/
 │
-├── data/         -> datasets and retrieved documents
-├── notebooks/    -> Jupyter notebooks and experiments
-├── report/       -> LaTeX reports and PDF papers
-├── results/      -> evaluation outputs and figures
-├── src/          -> reusable Python source code
+├── data/          # datasets and retrieved documents
+├── notebooks/     # Jupyter notebooks and experiments
+├── report/        # LaTeX reports and PDF papers
+├── results/       # evaluation outputs and figures
+├── src/           # reusable Python source code
 │
 ├── requirements.txt
 ├── README.md
@@ -265,7 +299,29 @@ qa_uncertainty_project/
 
 ---
 
-# Installation
+## Main Experimental Notebooks
+
+The primary experimental notebooks are organized as follows:
+
+```text
+01_baseline_qa.ipynb
+02_self_consistency.ipynb
+03_threshold_analysis.ipynb
+04_calibration.ipynb
+05_conformal_prediction.ipynb
+```
+
+Each notebook corresponds to a distinct experimental phase and contains:
+
+* implementation details,
+* theoretical explanations,
+* code experiments,
+* intermediate outputs,
+* and experimental observations.
+
+---
+
+## Installation
 
 Install dependencies using:
 
@@ -275,43 +331,39 @@ pip install -r requirements.txt
 
 ---
 
-# Main Libraries
+## Main Libraries
 
-The implementation uses:
+The implementation primarily uses:
 
-- transformers
-- torch
-- sentence-transformers
-- numpy
-- scikit-learn
-- matplotlib
+* transformers
+* torch
+* sentence-transformers
+* numpy
+* scikit-learn
+* matplotlib
 
 ---
 
-# Running the Project
+## Running the Project
 
-The main experiments and implementations are available inside:
+The main implementations and experiments are available inside:
 
 ```text
 notebooks/
 ```
 
-In particular:
-
-```text
-qa_reliability_full_experiments.ipynb
-```
-
-contains the majority of the experimental pipeline developed during the project.
+The notebooks may be executed sequentially following the experimental pipeline structure.
 
 ---
 
-# Research Report
+## Research Report
 
-The repository also contains:
-- LaTeX source files,
-- experimental reports,
-- and evolving paper drafts
+The repository additionally contains:
+
+* LaTeX source files,
+* technical reports,
+* experimental analyses,
+* and evolving research-oriented paper drafts
 
 inside:
 
@@ -319,60 +371,74 @@ inside:
 report/
 ```
 
----
-
-# Current Status
-
-This project is currently an ongoing research-oriented implementation and experimental study.
-
-The work focuses on:
-- reliable QA,
-- uncertainty estimation,
-- grounded generation,
-- and trustworthy LLM behavior.
+The report presents the theoretical background, implementation details, reliability analysis, and experimental observations associated with the framework.
 
 ---
 
-# Future Work
+## Current Status
 
-Planned future directions include:
+This repository currently represents an exploratory and educational research-oriented implementation developed to study reliability mechanisms for LLM-based QA systems.
 
-- larger benchmark datasets,
-- stronger embedding models,
-- semantic answer evaluation,
-- advanced calibration methods,
-- larger-scale conformal evaluation,
-- GUI/web interface,
-- deployment-oriented optimization,
-- integration with larger LLMs,
-- parameter-efficient fine-tuning methods,
-- and evaluation on industrial QA tasks.
+The project focuses on:
+
+* reliable question answering,
+* uncertainty estimation,
+* grounded generation,
+* calibration analysis,
+* and trustworthy LLM behavior.
 
 ---
 
-# References
+## Disclaimer
 
-This project is inspired by research literature including:
+This repository represents an experimental and educational research project focused on studying reliability-oriented mechanisms for LLM-based QA systems.
 
-- Self-Consistency Decoding
-- Retrieval-Augmented Generation (RAG)
-- Calibration of Neural Networks
-- Conformal Prediction
-- Reliable NLP and QA systems
-
-Additional details and citations are provided in the accompanying technical report.
+The implementations are intended for exploratory analysis and research-oriented experimentation and should not be interpreted as production-grade reliability guarantees.
 
 ---
 
-# Author
+## Future Work
 
-Morad Ahmadnasab
+Possible future directions include:
 
-PhD in Applied Mathematics  
+* larger benchmark datasets,
+* semantic similarity evaluation,
+* stronger embedding models,
+* adaptive retrieval mechanisms,
+* advanced calibration strategies,
+* larger-scale conformal evaluation,
+* integration with larger LLMs,
+* parameter-efficient fine-tuning methods,
+* deployment-oriented optimization,
+* GUI/web interfaces,
+* and evaluation on industrial QA tasks.
+
+---
+
+## References
+
+This project is inspired by research literature related to:
+
+* Retrieval-Augmented Generation (RAG),
+* Self-Consistency Decoding,
+* Calibration of Neural Networks,
+* Conformal Prediction,
+* Reliable NLP systems,
+* and uncertainty-aware machine learning.
+
+Additional references and citations are provided in the accompanying technical report.
+
+---
+
+## Author
+
+**Morad Ahmadnasab**
+
 Research interests include:
-- Numerical Linear Algebra,
-- Scientific Computing,
-- Optimization,
-- Machine Learning,
-- Reliable AI Systems,
-- and Uncertainty Quantification.
+
+* Numerical Linear Algebra,
+* Scientific Computing,
+* Optimization,
+* Machine Learning,
+* Reliable AI Systems,
+* and Uncertainty Quantification.
